@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useCallback, useState, ReactChild, CSSProperties } from 'react';
 import Jazzicon from './Jazzicon';
-import { useEnsAvatar, useEnsName } from 'wagmi';
+import { useEnsName } from 'wagmi';
 
 export interface AvatarProps {
   size: number;
@@ -19,9 +19,8 @@ export interface AvatarProps {
 
 export function Avatar({ size, address, defaultComponent, style }: AvatarProps): JSX.Element {
   const { data: ensName } = useEnsName({ address: address as `0x${string}` });
-  const { data: avatarUri } = useEnsAvatar({
-    name: ensName || undefined
-  });
+  // Served through our own route so the browser never contacts the host in the avatar record
+  const avatarUri = ensName ? `/api/avatar/${encodeURIComponent(ensName)}` : undefined;
 
   const [loaded, setLoaded] = useState(false);
 

@@ -20,6 +20,7 @@ import { CardSummary } from 'modules/app/components/Card/CardSummary';
 import { ZERO_ADDRESS } from 'modules/web3/constants/addresses';
 import { StatBox } from 'modules/app/components/StatBox';
 import { StatusText } from 'modules/app/components/StatusText';
+import { parseEther } from 'viem';
 
 type Props = {
   proposal: SkyProposal;
@@ -33,6 +34,14 @@ export default function SkyExecutiveOverviewCard({ proposal, isHat, skyOnHat }: 
   useEffect(() => {
     setPostedDateString(`posted ${formatDateWithoutTime(proposal.date)}`);
   }, []);
+
+  // The executive list API returns skySupport in SKY, getSkyStatusText expects wei like skyOnHat
+  const spellDataInWei = !proposal.spellData?.skySupport
+    ? proposal.spellData
+    : {
+        ...proposal.spellData,
+        skySupport: parseEther(proposal.spellData.skySupport.toString()).toString()
+      };
 
   return (
     <Card
@@ -142,7 +151,7 @@ export default function SkyExecutiveOverviewCard({ proposal, isHat, skyOnHat }: 
         <Divider my={0} />
         <Flex sx={{ py: 2, justifyContent: 'center' }}>
           <StatusText testId="proposal-status">
-            {getSkyStatusText({ spellData: proposal.spellData, skyOnHat })}
+            {getSkyStatusText({ spellData: spellDataInWei, skyOnHat })}
           </StatusText>
         </Flex>
       </Flex>

@@ -59,7 +59,7 @@ async function fetchSkyHatDirectly() {
     const data = await response.json();
     return {
       hatAddress: data.hatAddress,
-      skyOnHat: data.approvals
+      skyOnHat: data.skyOnHat
     };
   } catch (error) {
     console.error('Error fetching Sky hat:', error);

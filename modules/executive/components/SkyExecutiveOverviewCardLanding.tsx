@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import { useState, useEffect } from 'react';
-import { Text, Flex, Box, Button, Badge, Divider, Card } from 'theme-ui';
+import { Text, Flex, Box, Button, Divider, Card } from 'theme-ui';
 import Skeleton from 'modules/app/components/SkeletonThemed';
 import { formatDateWithoutTime } from 'lib/datetime';
 import { getSkyStatusText } from 'modules/executive/helpers/getStatusText';

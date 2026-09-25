@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BaseError, HttpRequestError } from 'viem';
+import { BaseError, ContractFunctionRevertedError, HttpRequestError } from 'viem';
 import { getSlateAddresses, CHIEF_MAX_YAYS } from '../getSlateAddresses';
 import { mainnetPublicClient } from 'modules/wagmi/config/config.default';
 import { chiefAbi } from 'modules/contracts/generated';
@@ -64,6 +64,16 @@ describe('getSlateAddresses', () => {
     mockSlate(SPELL_A, new HttpRequestError({ url: 'https://rpc', status: 503 }), SPELL_B);
 
     await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).rejects.toThrow(HttpRequestError);
+  });
+
+  it('throws instead of ending the slate on a revert, which is how viem reports a provider -32603 error', async () => {
+    mockSlate(
+      SPELL_A,
+      new ContractFunctionRevertedError({ abi: chiefAbi, functionName: 'slates', message: 'internal error' }),
+      SPELL_B
+    );
+
+    await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).rejects.toThrow(ContractFunctionRevertedError);
   });
 
   it('ignores errors after the end of the slate', async () => {

@@ -7,22 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import { mainnetPublicClient, tenderly, tenderlyPublicClient } from 'modules/wagmi/config/config.default';
-import { Abi, BaseError, ContractFunctionRevertedError } from 'viem';
+import { Abi, BaseError } from 'viem';
 
 // DSChief's MAX_YAYS: set in its constructor, with no setter. Check it before pointing the portal at a
 // different Chief, since getSlateAddresses reads at most this many spells from a slate.
 export const CHIEF_MAX_YAYS = 5;
 
 // Out-of-bounds slates() reads hit INVALID (Solidity 0.4's array bounds check). Nodes report it as an
-// EVM error rather than a revert, and the message differs by client.
+// EVM error rather than a revert, and the message differs by client. A revert doesn't count: this Chief
+// never reverts on these reads, and viem reports a provider's generic -32603 error as one.
 function isOutOfBounds(error: unknown): boolean {
   return (
     error instanceof BaseError &&
-    !!error.walk(
-      e =>
-        e instanceof ContractFunctionRevertedError ||
-        (e instanceof BaseError && /invalid ?(fe)?opcode|badinstruction/i.test(e.details))
-    )
+    !!error.walk(e => e instanceof BaseError && /invalid ?(fe)?opcode|badinstruction/i.test(e.details))
   );
 }
 

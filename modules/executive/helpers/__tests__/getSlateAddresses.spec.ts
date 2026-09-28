@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BaseError, ContractFunctionRevertedError, HttpRequestError } from 'viem';
+import { BaseError, ContractFunctionRevertedError, HttpRequestError, pad, toHex } from 'viem';
 import { getSlateAddresses, CHIEF_MAX_YAYS } from '../getSlateAddresses';
 import { mainnetPublicClient } from 'modules/wagmi/config/config.default';
 import { chiefAbi } from 'modules/contracts/generated';
@@ -19,7 +19,6 @@ vi.mock('modules/wagmi/config/config.default', () => ({
 }));
 
 const CHIEF = '0x0a3f6849f78076aefaDf113F5BED87720274dDC0';
-const SLATE = '0xd6182083f5caf68c9a8e15cde248c1f265ab9b421c2359cc7436ae7f4bab0d37';
 const SPELL_A = '0xe751BF33164b8786C71D59c48F668d22408e142D';
 const SPELL_B = '0x86d6CdD0D259AAAfb8134D47464b77743F50380B';
 
@@ -36,8 +35,13 @@ function mockSlate(...reads: (string | Error)[]) {
   }) as never);
 }
 
+// Read slates are cached for the life of the module, so each test reads a slate no other test has
+let slateCount = 0;
+let SLATE: `0x${string}`;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  SLATE = pad(toHex(++slateCount), { size: 32 });
 });
 
 describe('getSlateAddresses', () => {
@@ -79,6 +83,40 @@ describe('getSlateAddresses', () => {
   it('ignores errors after the end of the slate', async () => {
     mockSlate(SPELL_A, outOfBounds(), new HttpRequestError({ url: 'https://rpc', status: 503 }));
 
+    await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).resolves.toEqual([SPELL_A]);
+  });
+
+  it('shares one read between concurrent calls for the same slate', async () => {
+    mockSlate(SPELL_A, SPELL_B);
+
+    const reads = await Promise.all([
+      getSlateAddresses(1, CHIEF, chiefAbi, SLATE),
+      getSlateAddresses(1, CHIEF, chiefAbi, SLATE),
+      getSlateAddresses(1, CHIEF, chiefAbi, SLATE.toUpperCase().replace('0X', '0x') as `0x${string}`)
+    ]);
+
+    expect(reads).toEqual([
+      [SPELL_A, SPELL_B],
+      [SPELL_A, SPELL_B],
+      [SPELL_A, SPELL_B]
+    ]);
+    expect(readContract).toHaveBeenCalledTimes(CHIEF_MAX_YAYS);
+  });
+
+  it('serves a slate that was already read without reading it again', async () => {
+    mockSlate(SPELL_A);
+    await getSlateAddresses(1, CHIEF, chiefAbi, SLATE);
+    readContract.mockClear();
+
+    await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).resolves.toEqual([SPELL_A]);
+    expect(readContract).not.toHaveBeenCalled();
+  });
+
+  it('does not cache a failed read', async () => {
+    mockSlate(new HttpRequestError({ url: 'https://rpc', status: 503 }));
+    await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).rejects.toThrow(HttpRequestError);
+
+    mockSlate(SPELL_A);
     await expect(getSlateAddresses(1, CHIEF, chiefAbi, SLATE)).resolves.toEqual([SPELL_A]);
   });
 });

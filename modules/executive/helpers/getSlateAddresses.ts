@@ -23,11 +23,33 @@ function isOutOfBounds(error: unknown): boolean {
   );
 }
 
+// A slate's hash is keccak256 of its spells (DSChief's etch), so a hash can only ever hold one list and a
+// slate that's been read never goes stale. Caching the pending read also makes every delegate on the same
+// slate share one read: fetchDelegatesExecSupport asks for each delegate's slate, and ~260 voting delegates
+// share ~100 slates. A failed read is dropped, so the next call retries it.
+const slateCache = new Map<string, Promise<string[]>>();
+
+export function getSlateAddresses(
+  chainId: number,
+  address: `0x${string}`,
+  abi: Abi,
+  slateHash: `0x${string}`
+): Promise<string[]> {
+  const key = `${chainId}:${address.toLowerCase()}:${slateHash.toLowerCase()}`;
+  const cached = slateCache.get(key);
+  if (cached) return cached;
+
+  const read = readSlate(chainId, address, abi, slateHash);
+  slateCache.set(key, read);
+  read.catch(() => slateCache.delete(key));
+  return read;
+}
+
 // DSChief has no length() getter, so read every index a slate can hold in parallel (sent together in one
 // JSON-RPC batch) and keep the reads before the first out-of-bounds one. A multicall can't be used: the
 // INVALID opcode burns all the gas and fails the whole batch. Any other error is thrown instead of
 // returning a partial slate.
-export async function getSlateAddresses(
+async function readSlate(
   chainId: number,
   address: `0x${string}`,
   abi: Abi,

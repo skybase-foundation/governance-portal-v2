@@ -9,12 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BaseError, ContractFunctionRevertedError, HttpRequestError, pad, toHex } from 'viem';
 import { getSlateAddresses, CHIEF_MAX_YAYS } from '../getSlateAddresses';
-import { mainnetPublicClient } from 'modules/wagmi/config/config.default';
+import { mainnetChiefSlatesClient } from 'modules/wagmi/config/config.default';
 import { chiefAbi } from 'modules/contracts/generated';
 
 vi.mock('modules/wagmi/config/config.default', () => ({
-  mainnetPublicClient: { readContract: vi.fn() },
-  tenderlyPublicClient: { readContract: vi.fn() },
+  mainnetChiefSlatesClient: { readContract: vi.fn() },
+  tenderlyChiefSlatesClient: { readContract: vi.fn() },
   tenderly: { id: 314310 }
 }));
 
@@ -24,7 +24,7 @@ const SPELL_B = '0x86d6CdD0D259AAAfb8134D47464b77743F50380B';
 
 // How the proxy RPC reports an out-of-bounds slates() read
 const outOfBounds = () => new BaseError('Execution failed', { details: 'EVM error: InvalidFEOpcode' });
-const readContract = vi.mocked(mainnetPublicClient.readContract);
+const readContract = vi.mocked(mainnetChiefSlatesClient.readContract);
 
 // Answers slates(slate, i) from a per-index list of results
 function mockSlate(...reads: (string | Error)[]) {

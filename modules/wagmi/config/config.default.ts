@@ -75,9 +75,15 @@ export const wagmiConfigProd = createConfig({
   multiInjectedProviderDiscovery: true
 });
 
+// Fold concurrent readContract calls into Multicall3 aggregate3 calls, as wagmi already does for the hooks.
+// Without it every read is its own entry in a JSON-RPC batch, and a page that fans out over delegates sends
+// several proxy requests where a couple of eth_calls would do.
+const publicClientBatch = { multicall: true } as const;
+
 export const mainnetPublicClient = createPublicClient({
   chain: mainnet,
   transport: transports[mainnet.id],
+  batch: publicClientBatch,
   key: 'mainnet-public-client',
   name: 'Mainnet public client'
 });
@@ -85,6 +91,7 @@ export const mainnetPublicClient = createPublicClient({
 export const tenderlyPublicClient = createPublicClient({
   chain: tenderly,
   transport: transports[tenderly.id],
+  batch: publicClientBatch,
   key: 'tenderly-public-client',
   name: 'Tenderly public client'
 });
@@ -92,6 +99,7 @@ export const tenderlyPublicClient = createPublicClient({
 export const arbitrumPublicClient = createPublicClient({
   chain: arbitrum,
   transport: transports[arbitrum.id],
+  batch: publicClientBatch,
   key: 'arbitrum-public-client',
   name: 'Arbitrum public client'
 });
@@ -99,6 +107,25 @@ export const arbitrumPublicClient = createPublicClient({
 export const arbitrumTestnetPublicClient = createPublicClient({
   chain: arbitrumSepolia,
   transport: transports[arbitrumSepolia.id],
+  batch: publicClientBatch,
   key: 'arbitrum-testnet-public-client',
   name: 'Arbitrum Testnet public client'
+});
+
+// Chief slates() reads must never share a multicall. DSChief is Solidity 0.4, so an out-of-bounds read hits
+// INVALID, which burns all the gas its aggregate3 sub-call was given and starves every call after it in the
+// same batch: unrelated reads fail with it. These clients keep the proxy's JSON-RPC batching without folding
+// reads into a multicall.
+export const mainnetChiefSlatesClient = createPublicClient({
+  chain: mainnet,
+  transport: transports[mainnet.id],
+  key: 'mainnet-chief-slates-client',
+  name: 'Mainnet Chief slates client'
+});
+
+export const tenderlyChiefSlatesClient = createPublicClient({
+  chain: tenderly,
+  transport: transports[tenderly.id],
+  key: 'tenderly-chief-slates-client',
+  name: 'Tenderly Chief slates client'
 });

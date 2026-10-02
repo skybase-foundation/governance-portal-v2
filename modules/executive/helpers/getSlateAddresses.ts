@@ -6,7 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 */
 
-import { mainnetPublicClient, tenderly, tenderlyPublicClient } from 'modules/wagmi/config/config.default';
+import {
+  mainnetChiefSlatesClient,
+  tenderly,
+  tenderlyChiefSlatesClient
+} from 'modules/wagmi/config/config.default';
 import { Abi, BaseError } from 'viem';
 
 // DSChief's MAX_YAYS: set in its constructor, with no setter. Check it before pointing the portal at a
@@ -55,7 +59,7 @@ async function readSlate(
   abi: Abi,
   slateHash: `0x${string}`
 ): Promise<string[]> {
-  const publicClient = chainId === tenderly.id ? tenderlyPublicClient : mainnetPublicClient;
+  const publicClient = chainId === tenderly.id ? tenderlyChiefSlatesClient : mainnetChiefSlatesClient;
 
   const results = await Promise.allSettled(
     Array.from({ length: CHIEF_MAX_YAYS }, (_, i) =>

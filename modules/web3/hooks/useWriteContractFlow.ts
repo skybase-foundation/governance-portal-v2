@@ -51,6 +51,8 @@ export function useWriteContractFlow<
     ...useSimulateContractParamters
   } = parameters;
 
+  const { address: account, connector } = useAccount();
+
   // Prepare tx config
   const {
     data: simulationData,
@@ -59,6 +61,12 @@ export function useWriteContractFlow<
     error: simulationError
   } = useSimulateContract({
     ...useSimulateContractParamters,
+    // Tenderly Admin RPCs expose unlocked accounts through `eth_accounts`.
+    // Override that default only after wagmi has a connected wallet; passing
+    // `account: undefined` makes disconnected pages request a connector client.
+    ...(useSimulateContractParamters.account || account
+      ? { account: useSimulateContractParamters.account ?? account }
+      : {}),
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
   } as UseSimulateContractParameters);
 
@@ -82,7 +90,6 @@ export function useWriteContractFlow<
   });
 
   // Workaround to get `txHash` from Safe connector
-  const { connector } = useAccount();
   const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
 
   const eventHash = useWaitForSafeTxHash({

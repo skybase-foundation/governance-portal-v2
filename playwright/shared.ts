@@ -22,15 +22,32 @@ export const TEST_ACCOUNTS: TestAccounts = {
 };
 
 export async function connectWallet(page: Page) {
-  await page.getByRole('button', { name: 'Connect wallet' }).click();
+  const connectBtn = page.getByRole('button', { name: 'Connect wallet' });
+
+  // Idempotent: if the wallet is already connected (e.g. after an earlier
+  // connectWallet call on a different page), the "Connect wallet" button is
+  // gone and there is nothing to do.
+  if ((await connectBtn.count()) === 0) return;
+
+  await connectBtn.first().click();
+  const mockOption = page.getByTestId('select-wallet-mock');
   try {
+    // Short probe: only true if the wallet is already connected and the
+    // button opened the connection-info modal instead of the selector.
     await page.waitForSelector('text="Connected with Mock"', { timeout: 2000 });
     await closeModal(page);
-  } catch (error) {
-    await page.getByTestId('select-wallet-mock').click();
+    return;
+  } catch {
+    // Normal path: pick the mock connector and wait for the selector modal
+    // to close, which only happens once the connection completes. That
+    // gates downstream `:enabled` locators on the wallet actually being
+    // connected, without relying on the "Connected with Mock" string
+    // (only shown when re-opening the info modal, not on fresh connect).
+    await mockOption.click();
+    await mockOption.waitFor({ state: 'hidden', timeout: 20000 });
   }
 }
 
-export function closeModal(page) {
-  page.locator('[aria-label="close"]').click();
+export async function closeModal(page) {
+  await page.locator('[aria-label="close"]').click();
 }

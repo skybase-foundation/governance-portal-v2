@@ -72,7 +72,7 @@ export class DelegatePage {
     await this.confirmTransactionButton.click();
     await expect(this.confirmTransactionText).toBeVisible();
     await expect(this.congratsText).toBeVisible();
-    closeModal(this.page);
+    await closeModal(this.page);
   }
 
   async verifyDelegatedAmount(amount: string) {

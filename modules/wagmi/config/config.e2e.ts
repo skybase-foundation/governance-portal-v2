@@ -29,6 +29,8 @@ export const mockWagmiConfig = createConfig({
 export const mockPublicClient = createPublicClient({
   chain: tenderlyMainnet,
   transport: http(undefined, { batch: { wait: 500 } }),
+  // Same multicall batching as the production public clients, so E2E exercises the same read path
+  batch: { multicall: true },
   key: 'mock-public-client',
   name: 'Mock public client'
 });

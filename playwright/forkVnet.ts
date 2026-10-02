@@ -12,6 +12,32 @@ import { mockRpcCalls } from './mock-rpc-call';
 dotenv.config();
 
 const displayName = process.env.CI ? 'ci-tests-testnet' : 'local-tests-testnet';
+const RPC_READY_RETRIES = 5;
+
+const sendTenderlyRpc = async (rpcUrl: string, body: Record<string, unknown>) => {
+  let lastError = 'unknown error';
+
+  for (let attempt = 1; attempt <= RPC_READY_RETRIES; attempt++) {
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: {
+        accept: '*/*',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    const result = await response.json();
+
+    if (response.ok && !result.error) return;
+
+    lastError = result.error?.message || `${response.status} ${response.statusText}`;
+    if (attempt < RPC_READY_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+    }
+  }
+
+  throw new Error(`Tenderly RPC failed after ${RPC_READY_RETRIES} attempts: ${lastError}`);
+};
 
 test.beforeAll(async () => {
   await forkVnet(displayName);
@@ -22,7 +48,9 @@ test.beforeAll(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://virtual.mainnet.rpc.tenderly.co/**', mockRpcCalls);
+  const file = await readFile('./tenderlyTestnetData.json', 'utf-8');
+  const { TENDERLY_RPC_URL } = JSON.parse(file);
+  await page.route(TENDERLY_RPC_URL, mockRpcCalls);
 });
 
 // test.afterAll(async () => {
@@ -33,25 +61,13 @@ export const setEthBalance = async (address: string, amount: string) => {
   const file = await readFile('./tenderlyTestnetData.json', 'utf-8');
   const { TENDERLY_RPC_URL } = JSON.parse(file);
   const hexAmount = toHex(parseEther(amount)).replace(/^0x0/, '0x');
-  const response = await fetch(TENDERLY_RPC_URL, {
-    method: 'POST',
-    headers: {
-      accept: '*/*',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      method: 'tenderly_setBalance',
-      params: [[address], hexAmount],
-      id: 42,
-      jsonrpc: '2.0'
-    })
+  await sendTenderlyRpc(TENDERLY_RPC_URL, {
+    method: 'tenderly_setBalance',
+    params: [[address], hexAmount],
+    id: 42,
+    jsonrpc: '2.0'
   });
-
-  if (!response.ok) {
-    throw new Error(`Error: ${response.statusText}`);
-  } else {
-    console.log('ETH balance set');
-  }
+  console.log('ETH balance set');
 };
 
 export const setErc20Balance = async (
@@ -63,52 +79,44 @@ export const setErc20Balance = async (
   const file = await readFile('./tenderlyTestnetData.json', 'utf-8');
   const { TENDERLY_RPC_URL } = JSON.parse(file);
 
-  const response = await fetch(TENDERLY_RPC_URL, {
-    method: 'POST',
-    headers: {
-      accept: '*/*',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      method: 'tenderly_setErc20Balance',
-      params: [tokenAddress, [address], toHex(parseUnits(amount, decimals))],
-      id: 42,
-      jsonrpc: '2.0'
-    })
+  await sendTenderlyRpc(TENDERLY_RPC_URL, {
+    method: 'tenderly_setErc20Balance',
+    params: [tokenAddress, [address], toHex(parseUnits(amount, decimals))],
+    id: 42,
+    jsonrpc: '2.0'
   });
-
-  if (!response.ok) {
-    throw new Error(`Error: ${response.statusText}`);
-  } else {
-    console.log('token balance set');
-  }
+  console.log('token balance set');
 };
 
 const forkVnet = async (displayName: string) => {
   if (!displayName.length) {
     throw new Error('A display name is required for the virtual testnet');
   }
-  const res = await fetch(
-    'https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/testnet/clone',
-    {
-      headers: [
-        ['accept', 'application/json, text/plain, */*'],
-        ['content-type', 'application/json'],
-        ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
-      ],
-      method: 'POST',
-      body: JSON.stringify({
-        srcContainerId: '67d03866-3483-455a-a001-7f9f69b1c5d4', //id e2e-testing-apr-15-fork_apr_29
-        dstContainerDisplayName: displayName
-      })
-    }
-  );
+  const sourceVnetId = process.env.TENDERLY_MAINNET_FORK_VNET_ID;
+
+  const res = await fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+    headers: [
+      ['accept', 'application/json, text/plain, */*'],
+      ['content-type', 'application/json'],
+      ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+    ],
+    method: 'POST',
+    body: JSON.stringify({
+      vnet_id: sourceVnetId,
+      display_name: displayName
+    })
+  });
 
   const testnetData = await res.json();
 
-  if (res.status !== 200) {
+  if (!res.ok) {
     console.error('There was an error while forking the virtual testnet:', testnetData);
     process.exit(1);
+  }
+
+  const adminRpc = testnetData.rpcs?.find((rpc: { name: string }) => rpc.name === 'Admin RPC');
+  if (!adminRpc?.url) {
+    throw new Error('Tenderly fork response did not include an Admin RPC URL');
   }
 
   console.log('Virtual Testnet successfully forked');
@@ -117,7 +125,7 @@ const forkVnet = async (displayName: string) => {
     './tenderlyTestnetData.json',
     JSON.stringify({
       TENDERLY_TESTNET_ID: testnetData.id,
-      TENDERLY_RPC_URL: testnetData.connectivityConfig.endpoints[0].uri
+      TENDERLY_RPC_URL: adminRpc.url
     })
   );
 };

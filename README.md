@@ -104,6 +104,8 @@ Required for e2e:
 - Set `NEXT_PUBLIC_TENDERLY_RPC_KEY` to the API key required to query the forked Tenderly network RPC
 - Set `TENDERLY_API_KEY` to be able to run e2e tests against forked network
 
+**Optional** Set `TENDERLY_MAINNET_FORK_VNET_ID` to override the Tenderly VNet used as the source of each test fork
+
 ### Tests
 
 The Governance portal includes two test suites: Vitest and E2E

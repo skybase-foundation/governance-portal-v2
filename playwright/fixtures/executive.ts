@@ -66,7 +66,7 @@ export class LegacyExecutivePage {
     await this.depositMkrButton.click();
     await expect(this.confirmTransactionText).toBeVisible();
     await expect(this.transactionSuccessfulText).toBeVisible();
-    closeModal(this.page);
+    await closeModal(this.page);
   }
 
   async verifyLockedMkr(amount: string) {
@@ -99,6 +99,6 @@ export class LegacyExecutivePage {
     await this.withdrawMkrButton.click();
     await expect(this.confirmTransactionText).toBeVisible();
     await expect(this.transactionSuccessfulText).toBeVisible();
-    closeModal(this.page);
+    await closeModal(this.page);
   }
 }

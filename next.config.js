@@ -1,46 +1,47 @@
 const path = require('path');
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
+const { buildContentSecurityPolicy } = require('./lib/csp');
 
 require('dotenv').config({ path: './.env' });
 
+const pageHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: buildContentSecurityPolicy({
+      dev: process.env.NODE_ENV === 'development',
+      // Mirrors the chain selection in pages/_app.tsx
+      testChains:
+        process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development',
+      env: process.env
+    })
+  }
+];
+
 const securityHeaders = [
-  // Adds x-xss-protection
-  {
-    key: 'X-XSS-Protection',
-    value: '1; mode=block'
-  },
-
-  // adds x-frame-options
-  // remove for safe app to load
-  // {
-  //   key: 'X-Frame-Options',
-  //   value: 'SAMEORIGIN'
-  // },
-
-  // adds frame-ancestors which supercedes X-Frame-Options
-  // https://nextjs.org/docs/advanced-features/security-headers#x-frame-options
-  {
-    key: 'frame-ancestors',
-    value: 'https://app.safe.global'
-  },
-
-  // adds x-content-type
   {
     key: 'X-Content-Type-Options',
     value: 'nosniff'
   },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin'
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(), payment=()'
+  }
+];
 
-  // required for safe app to load
+// The Safe{Wallet} app fetches the manifest cross-origin, and other apps call the public API.
+const corsHeaders = [
   {
     key: 'Access-Control-Allow-Origin',
     value: '*'
   },
-
   {
     key: 'Access-Control-Allow-Methods',
     value: 'GET'
   },
-
   {
     key: 'Access-Control-Allow-Headers',
     value: 'X-Requested-With, content-type, Authorization'
@@ -95,9 +96,21 @@ const moduleExports = {
   async headers() {
     return [
       {
-        // Apply these headers to all routes in your application.
         source: '/:path*',
         headers: securityHeaders
+      },
+      {
+        // Pages only: API routes set their own CSP where they need one
+        source: '/:path((?!api/|_next/).*)',
+        headers: pageHeaders
+      },
+      {
+        source: '/api/:path*',
+        headers: corsHeaders
+      },
+      {
+        source: '/manifest.json',
+        headers: corsHeaders
       }
     ];
   },

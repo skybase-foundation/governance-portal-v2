@@ -17,7 +17,7 @@
     "test": "vitest run",
     "test:ci": "vitest run --coverage",
     "prettier": "prettier --config .prettierrc --write pages/ modules/ lib/",
-    "lint": "eslint --ext .tsx,.ts pages/ modules/ lib/",
+    "lint": "eslint --ext .tsx,.ts,.js pages/ modules/ lib/ next.config.js",
     "gql-generate": "graphql-codegen --config codegen.yml",
     "generate": "wagmi generate",
     "e2e": "playwright test --trace on",

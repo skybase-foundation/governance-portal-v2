@@ -52,7 +52,7 @@
     "lodash": "^4.17.21",
     "lottie-web": "^5.7.1",
     "mersenne-twister": "^1.1.0",
-    "next": "^15.5.18",
+    "next": "^15.5.21",
     "next-swagger-doc": "^0.4.1",
     "nextjs-progressbar": "^0.0.13",
     "react": "^18.3.1",

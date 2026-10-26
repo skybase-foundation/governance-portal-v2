@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import Document, { Html, Head, Main, NextScript, DocumentContext, DocumentInitialProps } from 'next/document';
-import { InitializeColorMode } from 'theme-ui';
+import { COLOR_MODE_SCRIPT } from 'lib/colorModeScript';
 
 class MyDocument extends Document {
   static async getInitialProps(ctx: DocumentContext): Promise<DocumentInitialProps> {
@@ -21,7 +21,8 @@ class MyDocument extends Document {
       <Html>
         <Head />
         <body>
-          <InitializeColorMode />
+          {/* Allowed by its hash in the CSP, see lib/csp.js */}
+          <script dangerouslySetInnerHTML={{ __html: COLOR_MODE_SCRIPT }} />
           <Main />
           <NextScript />
         </body>

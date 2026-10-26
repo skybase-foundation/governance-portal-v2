@@ -23,6 +23,7 @@ overrides:
   cross-spawn: ^7.0.5
   brace-expansion: ^2.0.2
   picomatch: ^4.0.3
+  sharp: ^0.35.5
 
 # pnpm v11 defaults `strictDepBuilds: true`, so any dependency with an
 # install/build script now fails the install unless it has an entry here.

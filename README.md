@@ -14,7 +14,7 @@ While the portal is hosted by MakerDAO at https://vote.makerdao.com, it can also
 
 In order to run the project locally, you must have the following installed on the machine:
 
-- Node, version 18.17 or greater (up to version 20.x) ([install](https://nodejs.dev/learn/how-to-install-nodejs))
+- Node 24.x, at least v24.22.1 (`nvm install 24` picks up the latest 24.x; see `.nvmrc`) ([install](https://nodejs.dev/learn/how-to-install-nodejs))
 
 To get started, clone the repository to the desired directory and then navigate into the project folder:
 
@@ -86,6 +86,8 @@ The following configuration values can be added to the `.env` file:
 - Set `GASLESS_DISABLED` to `true` to disable gasless voting in UI (pre-check endpoint will fail)
 
 - Set `NEXT_PUBLIC_VERCEL_ENV` to `development` to use development environment databases
+
+- Set `NEXT_PUBLIC_PROXY_ORIGIN` to the origin of the RPC and indexer proxy, e.g. `https://proxy.sky.money`. It defaults to `https://staging-proxy.sky.money`, and the build fails without it when `NEXT_PUBLIC_VERCEL_ENV` is `production`
 
 #### Optional (DUX-specific config, no performance improvements):
 

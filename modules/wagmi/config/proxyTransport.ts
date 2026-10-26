@@ -1,6 +1,5 @@
 import { fallback, http, type Transport } from 'viem';
-
-const PROXY_ORIGIN = process.env.NEXT_PUBLIC_PROXY_ORIGIN || 'https://staging-proxy.sky.money';
+import { PROXY_ORIGIN } from 'modules/app/constants/proxy';
 
 // The proxy rejects JSON-RPC batches longer than this. viem splits a larger burst into several batches
 // sent in parallel, so the cap costs extra requests, not latency.

@@ -53,3 +53,6 @@ package-lock.json
 
 #tenderly fork data
 tenderlyTestnetData.json
+
+# Sentry CLI config holds an auth token
+.sentryclirc

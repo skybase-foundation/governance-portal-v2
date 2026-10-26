@@ -6,6 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 */
 
+import { PROXY_ORIGIN } from 'modules/app/constants/proxy';
+
 /* Spock URLs */
 export const LOCAL_SPOCK_URL = 'http://localhost:3001/v1';
 export const STAGING_MAINNET_SPOCK_URL = 'https://staging-gov-polling.sky.money/api/v1';
@@ -14,7 +16,7 @@ export const TENDERLY_SPOCK_URL = 'https://staging-gov-polling.sky.money/api/v1'
 
 /* Subgraph URLs (Envio HyperIndex) */
 
-const ENVIO_SUBGRAPH_URL = `${process.env.NEXT_PUBLIC_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/indexer`;
+const ENVIO_SUBGRAPH_URL = `${PROXY_ORIGIN}/indexer`;
 export const STAGING_SUBGRAPH_URL = ENVIO_SUBGRAPH_URL;
 export const PROD_SUBGRAPH_URL = ENVIO_SUBGRAPH_URL;
 

@@ -34,12 +34,16 @@ export function renderWithRealWagmiConnector(component: React.ReactNode): Render
   );
 }
 
-export const mockIntersectionObserver = vi.fn(() => ({
-  root: null,
-  rootMargin: '600px',
-  thresholds: [1],
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  takeRecords: vi.fn()
-}));
+// Vitest 4 only lets `vi.fn()` be called with `new` when its implementation
+// is a `function` or `class`, so this can't be an arrow function.
+export const mockIntersectionObserver = vi.fn(function () {
+  return {
+    root: null,
+    rootMargin: '600px',
+    thresholds: [1],
+    disconnect: vi.fn(),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    takeRecords: vi.fn()
+  };
+});

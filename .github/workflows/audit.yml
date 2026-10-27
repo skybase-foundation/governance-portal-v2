@@ -1,0 +1,37 @@
+name: Audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - master
+  schedule:
+    - cron: '0 12 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 11.5.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `--prod` scopes the audit to the runtime dependency tree. pnpm's `dev: true`
+      # flag is unreliable here, so `--prod` is the reliable way to isolate
+      # advisories that actually ship to the browser/server bundle.
+      # Fails the job on any high or critical runtime advisory. This check is not
+      # required in branch protection, so a failure is visible on the PR without
+      # blocking merge.
+      - name: pnpm audit (runtime, high+)
+        run: pnpm audit --prod --audit-level high

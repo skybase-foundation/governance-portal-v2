@@ -44,7 +44,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - run: pnpm exec playwright install --with-deps
+      # Only the chromium project is enabled in playwright.config.ts; installing
+      # every browser's system deps made this step hit the job timeout.
+      - run: pnpm exec playwright install --with-deps chromium
 
       - name: Run E2E Test
         run: pnpm run e2e ${{ matrix.test }}
